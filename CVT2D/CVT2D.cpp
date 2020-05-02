@@ -96,14 +96,15 @@ void CCVT2D::Execute()
 		// distribute generators
 		int genPerProcess = (Ng + processSize - 1) / processSize;
 		
-		if (!isSilent && processRank == 0)
+		/*if (!isSilent && processRank == 0)
 		{
 			string fileName = directory + "\\iter_";
 			fileName += to_string(i) + ".txt";
 			ofstream output(fileName);
 			PrintGenerators(output);
 			output.close();
-		}
+		}*/
+
 		vector< Point_2 > centroids;
 		double maxMoveDist = 0.0;
 		K::FT energy = 0.0;
@@ -304,7 +305,7 @@ void CCVT2D::PrintGenerators(ostream &output)
 {
 	for (auto p : generators)
 	{
-		output << CGAL::to_double(p.x()) << " " << CGAL::to_double(p.y()) << endl;
+		output << CGAL::to_double(p.x()) << "," << CGAL::to_double(p.y()) << endl;
 	}
 }
 
@@ -425,14 +426,19 @@ pair<Point_2, double> CCVT2D::CalcTriangleCentroid(const Point_2 &p0, const Poin
 	sprintf_s(yMaxFuncStrC, "%f.*y+%f", CGAL::to_double(a1), CGAL::to_double(b1));
 	/*cout << funcCStr << endl << yMinFuncStrC << endl << yMaxFuncStrC << endl;*/
 
-	mwArray res(1, 1, mxDOUBLE_CLASS);
-	mwArray funcStr(funcCStr), yMinFuncStr(yMinFuncStrC), yMaxFuncStr(yMaxFuncStrC);
-	mwArray xmin(1, 1, mxDOUBLE_CLASS), xmax(1, 1, mxDOUBLE_CLASS);
-	xmin(1, 1) = CGAL::to_double(p0.y()), xmax(1, 1) = CGAL::to_double(p2.y());
+	mxArray *res = mxCreateNumericMatrix(1, 1, mxDOUBLE_CLASS, mxREAL);
+	mxArray *xmin = mxCreateNumericMatrix(1, 1, mxDOUBLE_CLASS, mxREAL);
+	mxArray *xmax = mxCreateNumericMatrix(1, 1, mxDOUBLE_CLASS, mxREAL);
+
+	mxArray *funcStr = mxCreateString(funcCStr);
+	mxArray *yMinFuncStr = mxCreateString(yMinFuncStrC);
+	mxArray *yMaxFuncStr = mxCreateString(yMaxFuncStrC);
+
+	*mxGetPr(xmin) = CGAL::to_double(p0.y()), * mxGetPr(xmax) = CGAL::to_double(p2.y());
 	/*cout << "Calculating centroid..." << endl;*/
-	multiIntegral(nargout, res, funcStr, xmin, xmax, yMinFuncStr, yMaxFuncStr);
+	mlfIntegral2(nargout, &res, funcStr, xmin, xmax, yMinFuncStr, yMaxFuncStr, nullptr);
 	/*cout << "Done" << endl;*/
-	double mass = res.Get(1, 1);
+	double mass = *mxGetPr(res);
 
 	// integrate x
 #if defined(DENSITY_FUNC1)
@@ -448,11 +454,11 @@ pair<Point_2, double> CCVT2D::CalcTriangleCentroid(const Point_2 &p0, const Poin
 	sprintf_s(funcCStr, ("(" + funcStrc + ").*x").c_str());
 #endif
 
-	funcStr = mwArray(funcCStr); 
+	funcStr = mxCreateString(funcCStr);
 
-	multiIntegral(nargout, res, funcStr, xmin, xmax, yMinFuncStr, yMaxFuncStr);
+	mlfIntegral2(nargout, &res, funcStr, xmin, xmax, yMinFuncStr, yMaxFuncStr, nullptr);
 
-	double xc = res.Get(1, 1);
+	double xc = *mxGetPr(res);
 
 	// integrate y
 #if defined(DENSITY_FUNC1)
@@ -467,11 +473,12 @@ pair<Point_2, double> CCVT2D::CalcTriangleCentroid(const Point_2 &p0, const Poin
 #elif defined(DENSITY_FUNC5)
 	sprintf_s(funcCStr, ("(" + funcStrc + ").*y").c_str());
 #endif
-	funcStr = mwArray(funcCStr);
-	
-	multiIntegral(nargout, res, funcStr, xmin, xmax, yMinFuncStr, yMaxFuncStr);
 
-	double yc = res.Get(1, 1);
+	funcStr = mxCreateString(funcCStr);
+	
+	mlfIntegral2(nargout, &res, funcStr, xmin, xmax, yMinFuncStr, yMaxFuncStr, nullptr);
+
+	double yc = *mxGetPr(res);
 
 	xc /= mass; yc /= mass;
 
@@ -614,14 +621,19 @@ double CCVT2D::CalcEquation2(const Point_2 &center,
 	sprintf_s(yMaxFuncStrC, "%f.*y+%f", CGAL::to_double(a1), CGAL::to_double(b1));
 	/*cout << funcCStr << endl << yMinFuncStrC << endl << yMaxFuncStrC << endl;*/
 
-	mwArray res(1, 1, mxDOUBLE_CLASS);
-	mwArray funcStr(funcCStr), yMinFuncStr(yMinFuncStrC), yMaxFuncStr(yMaxFuncStrC);
-	mwArray xmin(1, 1, mxDOUBLE_CLASS), xmax(1, 1, mxDOUBLE_CLASS);
-	xmin(1, 1) = CGAL::to_double(y0), xmax(1, 1) = CGAL::to_double(y1);
-	/*cout << "Calculating energy..." << endl;*/
-	multiIntegral(nargout, res, funcStr, xmin, xmax, yMinFuncStr, yMaxFuncStr);
-	/*cout << "Done" << endl;*/
-	return res.Get(1, 1);
+	mxArray* res = mxCreateNumericMatrix(1, 1, mxDOUBLE_CLASS, mxREAL);
+	mxArray* xmin = mxCreateNumericMatrix(1, 1, mxDOUBLE_CLASS, mxREAL);
+	mxArray* xmax = mxCreateNumericMatrix(1, 1, mxDOUBLE_CLASS, mxREAL);
+
+	mxArray* funcStr = mxCreateString(funcCStr);
+	mxArray* yMinFuncStr = mxCreateString(yMinFuncStrC);
+	mxArray* yMaxFuncStr = mxCreateString(yMaxFuncStrC);
+
+	*mxGetPr(xmin) = CGAL::to_double(y0), * mxGetPr(xmax) = CGAL::to_double(y1);
+
+	mlfIntegral2(nargout, &res, funcStr, xmin, xmax, yMinFuncStr, yMaxFuncStr, nullptr);
+
+	return *mxGetPr(res);
 }
 
 K::FT CCVT2D::CalcSubEquation(const Point_2 &center,

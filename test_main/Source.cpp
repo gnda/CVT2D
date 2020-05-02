@@ -174,11 +174,6 @@ int main(int argc, char **argv)
 		cout << "USAGE: [.exe] [.boundary] [#generator] [outputDir] [#iter=100] [seed=time(0)] [initGenerators=NULL]" << endl;
 		return -1;
 	}
-	if (!multiIntegralInitialize())
-	{
-		fprintf(stderr, "Could not initialize the library.\n");
-		exit(1);
-	}
 
 	MPI_Init(&argc, &argv);
 
@@ -225,6 +220,5 @@ int main(int argc, char **argv)
 
 	MPI_Finalize();
 
-	multiIntegralTerminate();
 	return 0;
 }

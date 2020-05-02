@@ -51,8 +51,9 @@
 #include "mpi.h"
 
 // includes for Matlab
-#include "mclmcr.h" 
-#include "multiIntegral.h"
+#include "mclmcr.h"
+#include "mclcppclass.h"
+#include "../matlab/integral2.h"
 
 /*#define DENSITY_FUNC1*/
  /*#define DENSITY_FUNC2*/
